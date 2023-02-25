@@ -128,7 +128,7 @@ class MappedPageFactoryImplTest {
             IMappedPage mappedPageI = mappedPageFactory.acquirePage(i);
             mappedPageI.getLocal(0).put(("hello " + i).getBytes());
             mappedPageI.setDirty(true);
-            ((MappedPageImpl) mappedPageI).flush();
+            mappedPageI.flush();
             long currentTime = System.currentTimeMillis();
             long iPageFileLastModifiedTime = mappedPageFactory.getPageFileLastModifiedTime(i);
             assertTrue(iPageFileLastModifiedTime >= start);
@@ -283,7 +283,7 @@ class MappedPageFactoryImplTest {
                     pages[i] = this.pageFactory.acquirePage(i);
                     this.pageFactory.releasePage(i);
                 } catch (IOException e) {
-                    fail("Got IOException when acquiring page " + i);
+                    fail("Got IOException when acquiring page " + i, e);
                 }
             }
         }

@@ -51,6 +51,9 @@ class MappedPageImplTest {
             assertEquals(2, buf.getInt());
             assertEquals(3L, buf.getLong());
         }
+        assertFalse(mappedPage.isClosed());
+        ((MappedPageImpl) mappedPage).close();
+        assertTrue(mappedPage.isClosed());
     }
 
     @Test

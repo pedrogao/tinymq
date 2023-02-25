@@ -124,7 +124,10 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
                 FileUtil.deleteFile(new File(fileName));
                 deleted = true;
                 break;
-            } catch (IllegalStateException ex) {
+            } catch (IOException ex) {
+                if (logger.isDebugEnabled()) {
+                    logger.warn("fail to delete file", ex);
+                }
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException ignored) {
@@ -132,7 +135,6 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
                 count++;
                 if (logger.isDebugEnabled()) {
                     logger.warn("fail to delete file " + fileName + ", tried round = " + count);
-                    logger.warn("fail to delete file", ex);
                 }
             }
         }
