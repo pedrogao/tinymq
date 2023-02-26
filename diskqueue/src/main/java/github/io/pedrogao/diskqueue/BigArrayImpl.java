@@ -32,10 +32,10 @@ public class BigArrayImpl implements IBigArray {
     // length in bytes of an index item
     private final static int INDEX_ITEM_LENGTH = 1 << INDEX_ITEM_LENGTH_BITS;
     // size in bytes of an index page
-    private final static int INDEX_PAGE_SIZE = INDEX_ITEM_LENGTH * INDEX_ITEMS_PER_PAGE;
+    final static int INDEX_PAGE_SIZE = INDEX_ITEM_LENGTH * INDEX_ITEMS_PER_PAGE;
 
     // size in bytes of a data page
-    private final int DATA_PAGE_SIZE;
+    final int DATA_PAGE_SIZE;
 
     // default size in bytes of a data page
     public final static int DEFAULT_DATA_PAGE_SIZE = 128 * 1024 * 1024;
@@ -200,9 +200,9 @@ public class BigArrayImpl implements IBigArray {
                 ByteBuffer toAppendIndexPageBuffer = toAppendIndexPage.getLocal(toAppendIndexItemOffset);
                 toAppendIndexPageBuffer.putLong(toAppendDataPageIndex);
                 toAppendIndexPageBuffer.putInt(toAppendDataItemOffset);
-                toAppendDataPageBuffer.putInt(data.length);
+                toAppendIndexPageBuffer.putInt(data.length);
                 long currentTime = TimeUtil.now();
-                toAppendDataPageBuffer.putLong(currentTime);
+                toAppendIndexPageBuffer.putLong(currentTime);
                 toAppendIndexPage.setDirty(true);
 
                 // advance the head
