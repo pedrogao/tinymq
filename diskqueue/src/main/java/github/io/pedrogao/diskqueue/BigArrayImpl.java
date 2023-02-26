@@ -270,7 +270,7 @@ public class BigArrayImpl implements IBigArray {
         }
     }
 
-    private void validateIndex(long index) {
+    void validateIndex(long index) {
         if (this.arrayTailIndex.get() <= this.arrayHeadIndex.get()) {
             if (index < this.arrayTailIndex.get() || index >= this.arrayHeadIndex.get()) {
                 throw new IndexOutOfBoundsException();
@@ -578,5 +578,9 @@ public class BigArrayImpl implements IBigArray {
         } finally {
             arrayWriteLock.unlock();
         }
+    }
+
+    public String getArrayDirectory() {
+        return arrayDirectory;
     }
 }
