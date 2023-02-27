@@ -4,7 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 public interface IBigArray extends Closeable {
-    public static final long NOT_FOUND = -1;
+    long NOT_FOUND = -1;
 
     long append(byte[] data) throws IOException;
 
