@@ -26,7 +26,7 @@ public class FanOutQueueImpl implements IFanOutQueue {
     // folder name prefix for queue front index page
     final static String QUEUE_FRONT_INDEX_PAGE_FOLDER_PREFIX = "front_index_";
 
-    final ConcurrentMap<String, QueueFront> queueFrontMap = new ConcurrentHashMap<String, QueueFront>();
+    final ConcurrentMap<String, QueueFront> queueFrontMap = new ConcurrentHashMap<>();
 
 
     public FanOutQueueImpl(String queueDir, String queueName, int pageSize)

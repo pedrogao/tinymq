@@ -26,26 +26,17 @@ public class FileUtil {
             for (var f : Objects.requireNonNull(dir.listFiles())) {
                 if (f.isFile()) {
                     Files.delete(Path.of(f.getPath()));
-                    // if (!f.delete()) {
-                    //    throw new IllegalStateException("delete file failed: " + f);
-                    // }
                 } else {
                     deleteDirectory(f);
                 }
             }
         }
-        // if (!dir.delete()) {
-        //    throw new IllegalStateException("delete directory failed: " + dir);
-        // }
         Files.delete(Path.of(dir.getPath()));
     }
 
     public static void deleteFile(File file) throws IOException {
         if (!file.exists() || !file.isFile())
             return;
-        // if (!file.delete()) {
-        //    throw new IllegalStateException("delete file failed: " + file);
-        // }
         Files.delete(Path.of(file.getPath()));
     }
 }

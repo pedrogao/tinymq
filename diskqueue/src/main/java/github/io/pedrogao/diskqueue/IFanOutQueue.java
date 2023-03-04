@@ -4,14 +4,14 @@ import java.io.Closeable;
 import java.io.IOException;
 
 public interface IFanOutQueue extends Closeable {
-    /**
+    /*
      * Constant represents earliest timestamp
      */
-    public static final long EARLIEST = -1;
-    /**
+    long EARLIEST = -1;
+    /*
      * Constant represents latest timestamp
      */
-    public static final long LATEST = -2;
+    long LATEST = -2;
 
     boolean isEmpty(String fanoutId) throws IOException;
 
