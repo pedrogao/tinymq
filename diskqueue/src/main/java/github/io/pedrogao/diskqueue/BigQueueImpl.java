@@ -78,7 +78,7 @@ public class BigQueueImpl implements IBigQueue {
 
             if (isEmpty()) return null;
 
-            queueFrontIndex = this.queueFrontIndex.get();
+            queueFrontIndex = this.queueFrontIndex.get(); // 当前队头
             byte[] data = innerArray.get(queueFrontIndex);
             long nextQueueFrontIndex = queueFrontIndex;
             if (nextQueueFrontIndex == Long.MAX_VALUE) { // overflow
@@ -143,7 +143,7 @@ public class BigQueueImpl implements IBigQueue {
                 return;
             }
 
-            long index = queueFrontIndex.get();
+            long index = queueFrontIndex.get(); // 当前队头
             for (long i = index; i < innerArray.size(); i++) {
                 iterator.forEach(innerArray.get(i));
             }
@@ -162,7 +162,7 @@ public class BigQueueImpl implements IBigQueue {
         }
 
         try {
-            innerArray.removeBeforeIndex(beforeIndex);
+            innerArray.removeBeforeIndex(beforeIndex); // 删除已消费的数据
         } catch (IndexOutOfBoundsException ignore) {
             // just ignore
         }

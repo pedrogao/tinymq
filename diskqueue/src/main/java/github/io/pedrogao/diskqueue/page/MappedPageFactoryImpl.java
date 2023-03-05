@@ -222,7 +222,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
         if (beforeIndexSet == null || beforeIndexSet.isEmpty())
             return -1L;
         TreeSet<Long> sortedIndexSet = new TreeSet<>(beforeIndexSet);
-        return sortedIndexSet.last();
+        return sortedIndexSet.last(); // 最后一个
     }
 
     @Override

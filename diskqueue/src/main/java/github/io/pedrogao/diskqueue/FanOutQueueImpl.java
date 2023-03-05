@@ -4,6 +4,8 @@ import github.io.pedrogao.diskqueue.page.IMappedPage;
 import github.io.pedrogao.diskqueue.page.IMappedPageFactory;
 import github.io.pedrogao.diskqueue.page.MappedPageFactoryImpl;
 import github.io.pedrogao.diskqueue.util.FolderNameValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -14,6 +16,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FanOutQueueImpl implements IFanOutQueue {
+
+    private final static Logger logger = LoggerFactory.getLogger(FanOutQueueImpl.class);
+
     final BigArrayImpl innerArray;
 
     // 2 ^ 3 = 8
@@ -41,10 +46,10 @@ public class FanOutQueueImpl implements IFanOutQueue {
     QueueFront getQueueFront(String fanoutId) throws IOException {
         QueueFront front = queueFrontMap.get(fanoutId);
         if (front == null) {
-            front = new QueueFront(fanoutId);
-            QueueFront found = queueFrontMap.putIfAbsent(fanoutId, front);
-            if (found != null) {
-                front.indexPageFactory.releaseCachedPages();
+            front = new QueueFront(fanoutId); // 新建
+            QueueFront found = queueFrontMap.putIfAbsent(fanoutId, front); // absent，防止其它线程并发操作
+            if (found != null) { // 已有，只会有一个线程进入
+                front.indexPageFactory.releaseCachedPages(); // 清理所有数据页
                 front = found;
             }
         }
@@ -56,6 +61,7 @@ public class FanOutQueueImpl implements IFanOutQueue {
     public boolean isEmpty(String fanoutId) throws IOException {
         try {
             innerArray.arrayReadLock.lock();
+
             QueueFront queueFront = getQueueFront(fanoutId);
             return queueFront.index.get() == innerArray.getHeadIndex();
         } finally {
@@ -76,7 +82,7 @@ public class FanOutQueueImpl implements IFanOutQueue {
     @Override
     public byte[] dequeue(String fanoutId) throws IOException {
         try {
-            innerArray.arrayReadLock.lock();
+            innerArray.arrayReadLock.lock(); // 需要对内部数据加锁
 
             QueueFront queueFront = getQueueFront(fanoutId);
             try {
@@ -91,8 +97,8 @@ public class FanOutQueueImpl implements IFanOutQueue {
 
                 return data;
             } catch (IndexOutOfBoundsException e) {
-                e.printStackTrace();
-                queueFront.resetIndex();
+                logger.error("access queue front {} err", queueFront, e);
+                queueFront.resetIndex(); // 重置
 
                 byte[] data = innerArray.get(queueFront.index.get());
                 queueFront.incrementIndex();
@@ -124,6 +130,7 @@ public class FanOutQueueImpl implements IFanOutQueue {
     public int peekLength(String fanoutId) throws IOException {
         try {
             this.innerArray.arrayReadLock.lock();
+
             QueueFront qf = this.getQueueFront(fanoutId);
             if (qf.index.get() == innerArray.getHeadIndex()) {
                 return -1; // empty
@@ -175,7 +182,7 @@ public class FanOutQueueImpl implements IFanOutQueue {
             if (qFront <= qRear) {
                 return (qRear - qFront);
             } else {
-                return Long.MAX_VALUE - qFront + 1 + qRear;
+                return Long.MAX_VALUE - qFront + 1 + qRear; // 循环队列
             }
         } finally {
             innerArray.arrayReadLock.unlock();
@@ -195,6 +202,7 @@ public class FanOutQueueImpl implements IFanOutQueue {
             for (QueueFront qf : this.queueFrontMap.values()) {
                 try {
                     qf.writeLock.lock();
+
                     qf.indexPageFactory.flush();
                 } finally {
                     qf.writeLock.unlock();
@@ -213,7 +221,7 @@ public class FanOutQueueImpl implements IFanOutQueue {
 
             this.innerArray.removeBefore(timestamp);
             for (QueueFront qf : this.queueFrontMap.values()) {
-                try {
+                try { // 删除后，有些队头可能不可用了
                     qf.writeLock.lock();
                     qf.validateAndAdjustIndex();
                 } finally {
@@ -231,7 +239,6 @@ public class FanOutQueueImpl implements IFanOutQueue {
             this.innerArray.arrayWriteLock.lock();
 
             this.innerArray.limitBackFileSize(sizeLimit);
-
             for (QueueFront qf : this.queueFrontMap.values()) {
                 try {
                     qf.writeLock.lock();
@@ -387,14 +394,14 @@ public class FanOutQueueImpl implements IFanOutQueue {
                 try {
                     innerArray.validateIndex(index.get());
                 } catch (IndexOutOfBoundsException ex) { // maybe the back array has been truncated to limit size
-                    resetIndex();
+                    resetIndex(); // 重置
                 }
             }
         }
 
         // reset queue front index to the tail of array
         void resetIndex() throws IOException {
-            index.set(innerArray.arrayTailIndex.get());
+            index.set(innerArray.arrayTailIndex.get()); // 再次重新消费
 
             this.persistIndex();
         }

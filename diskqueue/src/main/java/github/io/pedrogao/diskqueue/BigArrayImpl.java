@@ -128,9 +128,9 @@ public class BigArrayImpl implements IBigArray {
 
     private void initArrayIndex() throws IOException {
         IMappedPage metaDataPage = this.metaPageFactory.acquirePage(META_DATA_PAGE_INDEX);
-        ByteBuffer metaBuffer = metaDataPage.getLocal(0);
-        long head = metaBuffer.getLong();
-        long tail = metaBuffer.getLong();
+        ByteBuffer metaBuffer = metaDataPage.getLocal(0); // metadata buffer
+        long head = metaBuffer.getLong(); // head position
+        long tail = metaBuffer.getLong(); // tail position
 
         arrayHeadIndex.set(head);
         arrayTailIndex.set(tail);
@@ -138,24 +138,25 @@ public class BigArrayImpl implements IBigArray {
 
     private void initDataPageIndex() throws IOException {
         if (isEmpty()) {
-            headDataPageIndex = 0L;
-            headDataItemOffset = 0;
+            // queue is empty
+            headDataPageIndex = 0L; // page index is 0
+            headDataItemOffset = 0; // offset is 0
         } else {
             IMappedPage previousIndexPage = null;
             long previousIndexPageIndex = -1;
             try {
-                long previousIndex = this.arrayHeadIndex.get() - 1;
-                previousIndexPageIndex = MathUtil.div(previousIndex, INDEX_ITEMS_PER_PAGE_BITS);
-                previousIndexPage = indexPageFactory.acquirePage(previousIndexPageIndex);
+                long previousIndex = this.arrayHeadIndex.get() - 1; // 上一个 data index
+                previousIndexPageIndex = MathUtil.div(previousIndex, INDEX_ITEMS_PER_PAGE_BITS); // 计算得到 index page index
+                previousIndexPage = indexPageFactory.acquirePage(previousIndexPageIndex); // 得到 data page
                 int previousIndexPageOffset = (int) (MathUtil.mul(MathUtil.mod(previousIndex, INDEX_ITEMS_PER_PAGE_BITS),
-                        INDEX_ITEM_LENGTH_BITS));
-                ByteBuffer previousIndexItemBuffer = previousIndexPage.getLocal(previousIndexPageOffset);
-                long previousDataPageIndex = previousIndexItemBuffer.getLong();
-                int previousDataItemOffset = previousIndexItemBuffer.getInt();
-                int previousDataItemLength = previousIndexItemBuffer.getInt();
-
-                headDataPageIndex = previousDataPageIndex;
-                headDataItemOffset = previousDataItemOffset + previousDataItemLength;
+                        INDEX_ITEM_LENGTH_BITS)); // 计算 index page offset
+                ByteBuffer previousIndexItemBuffer = previousIndexPage.getLocal(previousIndexPageOffset); // buffer
+                long previousDataPageIndex = previousIndexItemBuffer.getLong(); // data page index
+                int previousDataItemOffset = previousIndexItemBuffer.getInt(); // offset
+                int previousDataItemLength = previousIndexItemBuffer.getInt(); // length
+                // set current data page metadata
+                headDataPageIndex = previousDataPageIndex; // data page index
+                headDataItemOffset = previousDataItemOffset + previousDataItemLength; // data page index
             } finally {
                 if (previousIndexPage != null) {
                     this.indexPageFactory.releasePage(previousIndexPageIndex);
@@ -167,7 +168,7 @@ public class BigArrayImpl implements IBigArray {
     @Override
     public long append(byte[] data) throws IOException {
         try {
-            arrayReadLock.lock();
+            arrayReadLock.lock(); // 读取页锁
             IMappedPage toAppendDataPage = null;
             IMappedPage toAppendIndexPage = null;
             long toAppendIndexPageIndex = -1L;
@@ -175,16 +176,17 @@ public class BigArrayImpl implements IBigArray {
             long toAppendArrayIndex = -1L;
 
             try {
-                appendLock.lock(); // only on appender
+                appendLock.lock(); // only an appender
+                // 当前页写完了，下一页
                 if (this.headDataItemOffset + data.length > DATA_PAGE_SIZE) {
                     this.headDataPageIndex++;
                     this.headDataItemOffset = 0;
                 }
-
+                // 待写入页
                 toAppendDataPageIndex = this.headDataPageIndex;
                 int toAppendDataItemOffset = this.headDataItemOffset;
 
-                toAppendArrayIndex = this.arrayHeadIndex.get();
+                toAppendArrayIndex = this.arrayHeadIndex.get(); // 当前头部
 
                 toAppendDataPage = this.dataPageFactory.acquirePage(toAppendDataPageIndex);
                 ByteBuffer toAppendDataPageBuffer = toAppendDataPage.getLocal(toAppendDataItemOffset);
@@ -239,7 +241,7 @@ public class BigArrayImpl implements IBigArray {
             long dataPageIndex = -1L;
             try {
                 ByteBuffer indexItemBuffer = this.getIndexItemBuffer(index);
-                dataPageIndex = indexItemBuffer.getLong();
+                dataPageIndex = indexItemBuffer.getLong(); // data page index
                 int dataItemOffset = indexItemBuffer.getInt();
                 int dataItemLength = indexItemBuffer.getInt();
                 dataPage = this.dataPageFactory.acquirePage(dataPageIndex);
@@ -258,7 +260,7 @@ public class BigArrayImpl implements IBigArray {
         IMappedPage indexPage = null;
         long indexPageIndex = -1L;
         try {
-            indexPageIndex = MathUtil.div(index, INDEX_ITEMS_PER_PAGE_BITS);
+            indexPageIndex = MathUtil.div(index, INDEX_ITEMS_PER_PAGE_BITS); // 计算得到 index page
             indexPage = this.indexPageFactory.acquirePage(indexPageIndex);
             int indexItemOffset = (int) (MathUtil.mul(MathUtil.mod(index, INDEX_ITEMS_PER_PAGE_BITS),
                     INDEX_ITEM_LENGTH_BITS));
@@ -290,7 +292,7 @@ public class BigArrayImpl implements IBigArray {
 
             ByteBuffer indexItemBuffer = this.getIndexItemBuffer(index);
             int position = indexItemBuffer.position();
-            indexItemBuffer.position(position + INDEX_ITEM_DATA_ITEM_TIMESTAMP_OFFSET);
+            indexItemBuffer.position(position + INDEX_ITEM_DATA_ITEM_TIMESTAMP_OFFSET); // 推进到时间戳
             return indexItemBuffer.getLong();
         } finally {
             arrayReadLock.unlock();
@@ -301,7 +303,7 @@ public class BigArrayImpl implements IBigArray {
     public long size() {
         try {
             arrayReadLock.lock();
-            return (this.arrayHeadIndex.get() - this.arrayTailIndex.get());
+            return this.arrayHeadIndex.get() - this.arrayTailIndex.get();
         } finally {
             arrayReadLock.unlock();
         }
@@ -351,7 +353,7 @@ public class BigArrayImpl implements IBigArray {
     @Override
     public void removeAll() throws IOException {
         try {
-            arrayWriteLock.lock();
+            arrayWriteLock.lock(); // 写锁
 
             this.indexPageFactory.deleteAllPages();
             this.dataPageFactory.deleteAllPages();
@@ -369,9 +371,9 @@ public class BigArrayImpl implements IBigArray {
             arrayWriteLock.lock();
 
             validateIndex(index);
-            long indexPageIndex = MathUtil.div(index, INDEX_ITEMS_PER_PAGE_BITS);
+            long indexPageIndex = MathUtil.div(index, INDEX_ITEMS_PER_PAGE_BITS); // index page
             ByteBuffer indexItemBuffer = this.getIndexItemBuffer(index);
-            long dataPageIndex = indexItemBuffer.getLong();
+            long dataPageIndex = indexItemBuffer.getLong(); // data page
 
             if (indexPageIndex > 0L) {
                 this.indexPageFactory.deletePagesBeforePageIndex(indexPageIndex);
@@ -390,11 +392,11 @@ public class BigArrayImpl implements IBigArray {
     public void removeBefore(long timestamp) throws IOException {
         try {
             arrayWriteLock.lock();
-
+            // 通过页的访问时间来删除
             long firstIndexPageIndex = this.indexPageFactory.getFirstPageIndexBefore(timestamp);
             if (firstIndexPageIndex >= 0) {
                 long toRemoveBeforeIndex = MathUtil.mul(firstIndexPageIndex, INDEX_ITEMS_PER_PAGE_BITS);
-                removeBeforeIndex(toRemoveBeforeIndex);
+                removeBeforeIndex(toRemoveBeforeIndex); // 计算得到 page index，然后删除之前的所有页
             }
         } catch (IndexOutOfBoundsException ex) {
             // ignore
@@ -531,7 +533,7 @@ public class BigArrayImpl implements IBigArray {
                     totalLength += INDEX_PAGE_SIZE;
                 }
             }
-            this.removeBeforeIndex(tailIndex);
+            this.removeBeforeIndex(tailIndex); // 删除 tail 之前的数据
         } finally {
             arrayWriteLock.unlock();
         }
