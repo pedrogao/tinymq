@@ -16,6 +16,7 @@
     <modules>
         <module>diskqueue</module>
         <module>mq</module>
+        <module>examples</module>
     </modules>
 
 
