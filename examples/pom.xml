@@ -12,7 +12,8 @@
     <artifactId>examples</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>protocol</module>
+        <module>fqueue</module>
+        <module>dqv1</module>
     </modules>
 
     <properties>
