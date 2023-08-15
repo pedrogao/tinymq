@@ -7,7 +7,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dqv1</artifactId>
+    <artifactId>dqv2</artifactId>
 
     <properties>
         <maven.compiler.source>19</maven.compiler.source>

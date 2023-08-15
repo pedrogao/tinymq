@@ -86,7 +86,7 @@ public class QueueFile {
             return null;
 
         try {
-            lock.readLock().lock();
+            lock.writeLock().lock();
 
             if (readOffset.get() == writeOffset.get() && size.get() == 0) {
                 return null;
@@ -104,7 +104,7 @@ public class QueueFile {
 
             return itemPayload;
         } finally {
-            lock.readLock().unlock();
+            lock.writeLock().unlock();
         }
     }
 
