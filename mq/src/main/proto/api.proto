@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "github.io.pedrogao.mq.api";
+
+package api;
+
+enum ResultCode {
+  SUCCESS = 0;
+  FAILURE = 1;
+  TRY_AGAIN = 2;
+}
+
+enum ErrorCode {
+  INTERNAL_ERROR = 0;
+  QUEUE_NOT_FOUND = 1;
+  QUEUE_EMPTY = 2;
+  // TODO: add more
+}
+
+message Result {
+  ResultCode resultCode = 1;
+  optional ErrorCode errorCode = 2;
+  optional string errorMessage = 3;
+}
+
+message Empty {
+  Result result = 1;
+}
+
+enum CompressionType {
+  NONE = 0;
+  GZIP = 1;
+  SNAPPY = 2;
+}
+
+message Message {
+  int64 index = 1;
+  bytes payload = 2;
+}
+
+message MessageList {
+  int32 size = 1;
+  CompressionType compressionType = 2;
+  bytes payload = 3; // List<Message> => compression => payload
+}
+
+message ProduceMessageRequest {
+  string queueName = 1;
+  bytes payload = 2;
+}
+
+message ProduceMessageResponse {
+  Result result = 1;
+  int64 index = 2;
+}
+
+message ConsumeMessageRequest {
+  string queueName = 1;
+  string channelName = 2;
+  int32 batchSize = 3;
+}
+
+message ConsumeMessageResponse {
+  Result result = 1;
+  MessageList messageList = 2;
+}
+
+message FetchMessageRequest {
+  string queueName = 1;
+  string channelName = 2;
+  int64 index = 3;
+  int32 batchSize = 4;
+}
+
+message FetchMessageResponse {
+  Result result = 1;
+  MessageList messageList = 2;
+}
+
+message CreateQueueRequest {
+  string queueName = 1;
+}
+
+message CreateQueueResponse {
+  Result result = 1;
+}
+
+message DeleteQueueRequest {
+  string queueName = 1;
+}
+
+message DeleteQueueResponse {
+  Result result = 1;
+}
+
+message GetQueueSizeRequest {
+  string queueName = 1;
+  string channelName = 2;
+}
+
+message GetQueueSizeResponse {
+  Result result = 1;
+  int64 size = 2;
+}
+
+service QueueService {
+
+  rpc produceMessage (ProduceMessageRequest) returns (ProduceMessageResponse) {}
+
+  rpc asyncProduceMessage (ProduceMessageRequest) returns(Empty) {}
+
+  rpc consumeMessage (ConsumeMessageRequest) returns (ConsumeMessageResponse) {}
+
+  rpc fetchMessage (FetchMessageRequest) returns (FetchMessageResponse) {}
+
+  rpc createQueue(CreateQueueRequest) returns (CreateQueueResponse) {}
+
+  rpc deleteQueue(DeleteQueueRequest) returns (DeleteQueueResponse) {}
+
+  rpc getQueueSize(GetQueueSizeRequest) returns (GetQueueSizeResponse) {}
+
+}
